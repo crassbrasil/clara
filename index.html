@@ -1,0 +1,30 @@
+
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doação Nexus Tech</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Doe para nossa causa!</h1>
+        <div class="donation-buttons">
+            <button class="donate-btn" data-value="30">R$ 30</button>
+            <button class="donate-btn" data-value="50">R$ 50</button>
+            <button class="donate-btn" data-value="100">R$ 100</button>
+            <!-- Adicionar outros valores conforme necessário -->
+        </div>
+    </div>
+    <div class="popup" id="popup">
+        <div class="popup-content">
+            <h2>Seu QR Code Pix</h2>
+            <div id="qr-code-container"></div>
+            <button onclick="copyPixCode()">Copiar Código Pix</button>
+            <button onclick="closePopup()">Fechar</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
