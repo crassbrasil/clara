@@ -1,30 +1,192 @@
+from pathlib import Path
 
+# Criar estrutura de arquivos para integração do site com API de geração de Pix
+html_code = """
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doação Nexus Tech</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ajude Maria Clara</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="container">
-        <h1>Doe para nossa causa!</h1>
-        <div class="donation-buttons">
-            <button class="donate-btn" data-value="30">R$ 30</button>
-            <button class="donate-btn" data-value="50">R$ 50</button>
-            <button class="donate-btn" data-value="100">R$ 100</button>
-            <!-- Adicionar outros valores conforme necessário -->
-        </div>
+  <div class="container">
+    <img src="https://i.postimg.cc/SR1LD8ZV/50-off-1.jpg" alt="Imagem topo" class="top-image">
+    <h1>Ajude a Maria Clara</h1>
+    <p class="description">Mesmo sozinhas estamos batalhando para uma vida digna!</p>
+
+    <button onclick="scrollToDoacoes()">DOAR AGORA</button>
+
+    <div id="doacoes">
+      <h2>Escolha um valor</h2>
+      <div class="botoes">
+        <button onclick="gerarPix(30)">R$30</button>
+        <button onclick="gerarPix(50)">R$50</button>
+        <button onclick="gerarPix(100)">R$100</button>
+      </div>
     </div>
-    <div class="popup" id="popup">
-        <div class="popup-content">
-            <h2>Seu QR Code Pix</h2>
-            <div id="qr-code-container"></div>
-            <button onclick="copyPixCode()">Copiar Código Pix</button>
-            <button onclick="closePopup()">Fechar</button>
-        </div>
+
+    <div id="pixPopup" class="popup hidden">
+      <div class="popup-content">
+        <h3>Use o QR Code ou Copie a chave Pix</h3>
+        <img id="qrCode" src="" alt="QR Code Pix">
+        <textarea id="pixCode" readonly></textarea>
+        <button onclick="copiarPix()">Copiar código</button>
+        <button onclick="fecharPopup()">Fechar</button>
+      </div>
     </div>
-    <script src="script.js"></script>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
+"""
+
+css_code = """
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f4f4f4;
+  color: #333;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.top-image {
+  width: 100%;
+  border-radius: 8px;
+}
+
+h1, h2 {
+  text-align: center;
+}
+
+.botoes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+button {
+  background: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #45a049;
+}
+
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.popup.hidden {
+  display: none;
+}
+
+.popup-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+}
+"""
+
+js_code = """
+function scrollToDoacoes() {
+  document.getElementById('doacoes').scrollIntoView({ behavior: 'smooth' });
+}
+
+function gerarPix(valor) {
+  fetch('gerar_pix.php?valor=' + valor)
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('qrCode').src = data.qr_code;
+      document.getElementById('pixCode').value = data.copia_cola;
+      document.getElementById('pixPopup').classList.remove('hidden');
+    });
+}
+
+function fecharPopup() {
+  document.getElementById('pixPopup').classList.add('hidden');
+}
+
+function copiarPix() {
+  const pixCode = document.getElementById('pixCode');
+  pixCode.select();
+  document.execCommand('copy');
+  alert('Chave Pix copiada!');
+}
+"""
+
+php_code = """
+<?php
+$valor = $_GET['valor'];
+$publicKey = 'pk_live_FUF01RbBgi0V4BXctjUyLEcqFIDs3d';
+$secretKey = 'sk_live_n2DcGrRa4ZpxPmtf3QAHszDhCeT2iYj6J7rs6LwawK';
+
+$url = 'https://api.lunacheckout.com/stores/0195c2e7-2e42-715b-a58b-b8772879a089/orders';
+
+$headers = [
+  'Authorization: Bearer ' . $secretKey,
+  'Content-Type: application/json',
+];
+
+$data = [
+  'amount' => intval($valor) * 100, // valor em centavos
+  'payment_method' => 'pix',
+  'customer' => ['name' => 'Doação Anônima'],
+];
+
+$curl = curl_init($url);
+curl_setopt($curl, CURLOPT_HTTPHEADER, $headers);
+curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($curl, CURLOPT_POST, true);
+curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($data));
+
+$response = curl_exec($curl);
+curl_close($curl);
+
+$result = json_decode($response, true);
+
+echo json_encode([
+  'qr_code' => $result['pix']['qr_code_url'],
+  'copia_cola' => $result['pix']['qr_code'],
+]);
+?>
+"""
+
+# Salvar os arquivos
+site_dir = Path("/mnt/data/doar_site_nexus")
+site_dir.mkdir(parents=True, exist_ok=True)
+(site_dir / "index.html").write_text(html_code, encoding="utf-8")
+(site_dir / "style.css").write_text(css_code, encoding="utf-8")
+(site_dir / "script.js").write_text(js_code, encoding="utf-8")
+(site_dir / "gerar_pix.php").write_text(php_code, encoding="utf-8")
+
+site_dir
+
